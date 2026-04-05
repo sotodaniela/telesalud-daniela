@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Docker data volumes
+postgres_data/
+mysql_data/
+mongo_data/
+redis_data/
+
+# Compiled files
+*.min.js
+*.min.css
+
+# Uploads and recordings
+uploads/
+recordings/*.webm
+recordings/*.mp4
