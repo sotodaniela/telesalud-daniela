@@ -213,7 +213,8 @@ $pending = $conn->query("SELECT COUNT(*) as count FROM consultations WHERE docto
         
         <div class="actions">
             <a href="schedule.php" class="btn btn-primary">📅 Agendar Cita</a>
-            <a href="new_consultation.php" class="btn">+ Nueva Videoconsulta</a>
+            <a href="patients.php" class="btn" style="background: #17a2b8;">👥 Pacientes</a>
+            <a href="teleconsulta.php" class="btn" style="background: #6f42c1;">💻 Teleconsulta</a>
         </div>
         
         <div class="card">
