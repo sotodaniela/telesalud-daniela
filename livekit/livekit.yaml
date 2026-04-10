@@ -1,0 +1,23 @@
+# LiveKit Server Configuration
+port: 7880
+bind_addresses:
+  - "0.0.0.0"
+
+# Redis configuration
+redis:
+  address: livekit-redis:6379
+
+# Room configuration
+room:
+  auto_create: true
+  empty_timeout: 300
+
+# WebRTC configuration
+rtc:
+  port_range_start: 50000
+  port_range_end: 60000
+  use_external_ip: true
+
+# Logging
+logging:
+  level: info

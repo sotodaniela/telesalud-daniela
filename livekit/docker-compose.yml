@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: livekit-server-new
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
+    environment:
+      - LIVEKIT_KEYS=APInewKey123:NewSecret456789012345678901234567890
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml
+    command: --config /etc/livekit.yaml
+    restart: unless-stopped
+    networks:
+      - telehealth-network
+
+networks:
+  telehealth-network:
+    external: true
+    name: livekit_livekit-network

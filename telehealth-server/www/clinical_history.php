@@ -1,14 +1,14 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['doctor_id'])) {
+if (!isset($_SESSION['user_id']) && !isset($_SESSION['doctor_id'])) {
     header('Location: login.php');
     exit;
 }
 
 $conn = new mysqli('telehealth-db', 'telehealth', 'telehealth123', 'telehealth');
-$doctor_id = $_SESSION['doctor_id'];
-$doctor_name = $_SESSION['doctor_name'];
+$doctor_id = $_SESSION['user_id'] ?? $_SESSION['doctor_id'] ?? null;
+$doctor_name = $_SESSION['user_name'] ?? $_SESSION['doctor_name'] ?? '';
 $message = '';
 
 // Get patient ID
@@ -159,14 +159,24 @@ $age = $birth_date->diff($today)->y;
             background: #f5f5f5;
         }
         .header {
-            background: #0066cc;
+            background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
             padding: 15px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .header h1 { font-size: 20px; }
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .header img {
+            height: 40px;
+            width: auto;
+            border-radius: 5px;
+        }
+        .header h1 { font-size: 18px; }
         .nav {
             display: flex;
             gap: 10px;
@@ -436,7 +446,13 @@ $age = $birth_date->diff($today)->y;
 </head>
 <body>
     <div class="header">
-        <h1>Historia Clínica - PAHO Telesalud</h1>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="images/Logo Ladera ESE.png" alt="Logo" style="height: 40px; width: auto; border-radius: 5px;">
+            <div>
+                <h1>Red de Salud Ladera ESE</h1>
+                <span style="font-size: 11px; opacity: 0.8;">NIT: 900.373.695-9 | Cra 28 No. 08-08 B/ Antonio Nariño, Cali | Tel: 556-2282</span>
+            </div>
+        </div>
         <div class="nav">
             <a href="dashboard.php">Dashboard</a>
             <a href="schedule.php">Agendamiento</a>

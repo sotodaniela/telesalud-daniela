@@ -43,10 +43,13 @@ $payload = json_encode([
     'sub' => 'doctor_' . $_SESSION['doctor_id'],
     'room' => $consultation['room_name'],
     'name' => $_SESSION['doctor_name'],
-    'exp' => time() + 7200,
-    'canPublish' => true,
-    'canSubscribe' => true,
-    'canPublishData' => true
+    'exp' => time() + 3600,
+    'video' => [
+        'canPublish' => true,
+        'canSubscribe' => true,
+        'canPublishData' => true,
+        'canPublishSources' => ['camera', 'microphone']
+    ]
 ]);
 
 $headerEncoded = base64url_encode($header);
@@ -74,7 +77,7 @@ $conn->close();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Videoconsulta - <?php echo htmlspecialchars($consultation['patient_name']); ?></title>
-    <script src="https://unpkg.com/livekit-client@2.5.5/dist/livekit-client.umd.cjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.5.5/+esm" type="module"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -377,7 +380,7 @@ $conn->close();
                 const hasPermissions = await requestMediaPermissions();
                 if (!hasPermissions) return;
                 
-                const lk = await import('https://unpkg.com/livekit-client@2.5.5/+esm');
+                const lk = await import('https://cdn.jsdelivr.net/npm/livekit-client@2.5.5/+esm');
                 const { Room, RoomEvent, Track } = lk;
                 
                 room = new Room({

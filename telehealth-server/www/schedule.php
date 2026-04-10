@@ -1,13 +1,15 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['doctor_id'])) {
+if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
 
 $conn = new mysqli('telehealth-db', 'telehealth', 'telehealth123', 'telehealth');
-$doctor_id = $_SESSION['doctor_id'];
+$user_id = $_SESSION['user_id'];
+$user_role = $_SESSION['user_role'];
+$user_name = $_SESSION['user_name'];
 
 // Handle form submission for new appointment
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
@@ -18,9 +20,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $notes = $conn->real_escape_string($_POST['notes']);
         $scheduled_datetime = $date . ' ' . $time . ':00';
         $room_name = 'room_' . time() . '_' . rand(1000, 9999);
+        $access_token = bin2hex(random_bytes(16));
         
-        $sql = "INSERT INTO consultations (room_name, doctor_id, patient_id, scheduled_date, notes, status) 
-                VALUES ('$room_name', $doctor_id, $patient_id, '$scheduled_datetime', '$notes', 'scheduled')";
+        $doctor_id = ($user_role === 'doctor') ? $user_id : 1;
+        
+        $sql = "INSERT INTO consultations (room_name, access_token, doctor_id, patient_id, scheduled_date, notes, status) 
+                VALUES ('$room_name', '$access_token', $doctor_id, $patient_id, '$scheduled_datetime', '$notes', 'scheduled')";
         $conn->query($sql);
         header('Location: schedule.php?success=1');
         exit;
@@ -30,14 +35,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $id = intval($_POST['id']);
         $status = $conn->real_escape_string($_POST['status']);
         $notes = $conn->real_escape_string($_POST['notes']);
-        $conn->query("UPDATE consultations SET status='$status', notes='$notes' WHERE id=$id AND doctor_id=$doctor_id");
+        $doctor_filter = ($user_role === 'doctor') ? "AND doctor_id = $user_id" : "";
+        $conn->query("UPDATE consultations SET status='$status', notes='$notes' WHERE id=$id $doctor_filter");
         header('Location: schedule.php');
         exit;
     }
     
     if ($_POST['action'] === 'delete') {
         $id = intval($_POST['id']);
-        $conn->query("DELETE FROM consultations WHERE id=$id AND doctor_id=$doctor_id");
+        $doctor_filter = ($user_role === 'doctor') ? "AND doctor_id = $user_id" : "";
+        $conn->query("DELETE FROM consultations WHERE id=$id $doctor_filter");
         header('Location: schedule.php');
         exit;
     }
@@ -50,14 +57,15 @@ $patients = $conn->query("SELECT id, CONCAT(first_name, ' ', last_name) as full_
 $month = isset($_GET['month']) ? intval($_GET['month']) : date('n');
 $year = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
 
-// Get appointments for current month
+// Get appointments for current month (filtered by user role)
 $start_date = date('Y-m-01', strtotime("$year-$month-01"));
 $end_date = date('Y-m-t', strtotime("$year-$month-01"));
+$doctor_filter = ($user_role === 'doctor') ? "AND c.doctor_id = $user_id" : "";
 $appointments = $conn->query("
-    SELECT c.*, CONCAT(p.first_name, ' ', p.last_name) as patient_name 
+    SELECT c.*, CONCAT(p.first_name, ' ', p.last_name) as patient_name, p.phone as patient_phone
     FROM consultations c 
     JOIN patients p ON c.patient_id = p.id 
-    WHERE c.doctor_id = $doctor_id 
+    WHERE 1=1 $doctor_filter
     AND DATE(c.scheduled_date) BETWEEN '$start_date' AND '$end_date'
     ORDER BY c.scheduled_date
 ");
@@ -80,7 +88,7 @@ $success = isset($_GET['success']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agendamiento - PAHO Telesalud</title>
+    <title>Agendamiento - Telesalud</title>
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
     <style>
@@ -90,7 +98,7 @@ $success = isset($_GET['success']);
             background: #f5f5f5;
         }
         .header {
-            background: #0066cc;
+            background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
             padding: 15px 30px;
             display: flex;
@@ -305,13 +313,24 @@ $success = isset($_GET['success']);
         .fc-toolbar-title {
             font-size: 18px !important;
         }
+        
+        .appointment-item input[readonly] {
+            background: #fff;
+            cursor: text;
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>PAHO Telesalud - Agendamiento</h1>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="images/Logo Ladera ESE.png" alt="Logo" style="height: 40px; width: auto; border-radius: 5px;">
+            <h1>Red de Salud Ladera ESE</h1>
+        </div>
         <div class="nav">
             <a href="dashboard.php">Dashboard</a>
+            <?php if ($user_role === 'admin'): ?>
+            <a href="users.php">Usuarios</a>
+            <?php endif; ?>
             <a href="schedule.php" class="active">Agendamiento</a>
             <a href="logout.php" class="logout">Cerrar Sesión</a>
         </div>
@@ -337,11 +356,12 @@ $success = isset($_GET['success']);
             <div class="card appointments-list">
                 <h2>Próximas Citas</h2>
                 <?php 
+                $doctor_filter = ($user_role === 'doctor') ? "AND c.doctor_id = $user_id" : "";
                 $upcoming = $conn->query("
                     SELECT c.*, CONCAT(p.first_name, ' ', p.last_name) as patient_name 
                     FROM consultations c 
                     JOIN patients p ON c.patient_id = p.id 
-                    WHERE c.doctor_id = $doctor_id 
+                    WHERE 1=1 $doctor_filter
                     AND c.scheduled_date >= NOW()
                     AND c.status = 'scheduled'
                     ORDER BY c.scheduled_date ASC
@@ -350,7 +370,11 @@ $success = isset($_GET['success']);
                 ?>
                 
                 <?php if ($upcoming->num_rows > 0): ?>
-                    <?php while ($apt = $upcoming->fetch_assoc()): ?>
+                    <?php 
+                    $base_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/patient_join.php';
+                    while ($apt = $upcoming->fetch_assoc()): 
+                        $patient_link = $base_url . '?token=' . $apt['access_token'];
+                    ?>
                     <div class="appointment-item">
                         <div class="time"><?php echo date('H:i', strtotime($apt['scheduled_date'])); ?></div>
                         <div class="patient"><?php echo htmlspecialchars($apt['patient_name']); ?></div>
@@ -358,6 +382,12 @@ $success = isset($_GET['success']);
                         <span class="status <?php echo $apt['status']; ?>"><?php echo ucfirst($apt['status']); ?></span>
                         <div class="appointment-actions">
                             <a href="join_consultation.php?id=<?php echo $apt['id']; ?>" class="btn-small" style="background: #28a745;">Iniciar Videoconsulta</a>
+                            <button class="btn-small" style="background: #17a2b8;" onclick="copyLink('<?php echo htmlspecialchars($patient_link); ?>')">📋 Copiar enlace</button>
+                        </div>
+                        <div style="margin-top: 10px; padding: 10px; background: #d4edda; border-radius: 5px; font-size: 11px;">
+                            <strong style="color: #155724;">Enlace único para paciente:</strong><br>
+                            <input type="text" id="link_<?php echo $apt['id']; ?>" readonly value="<?php echo htmlspecialchars($patient_link); ?>" style="width: 100%; padding: 5px; border: 1px solid #c3e6cb; border-radius: 3px; font-size: 11px; margin-top: 5px;">
+                            <button class="btn-small" style="background: #28a745; margin-top: 5px;" onclick="sendWhatsApp('<?php echo htmlspecialchars($apt['patient_name']); ?>', '<?php echo htmlspecialchars($patient_link); ?>')">📱 Enviar por WhatsApp</button>
                         </div>
                     </div>
                     <?php endwhile; ?>
@@ -434,6 +464,15 @@ $success = isset($_GET['success']);
                     <textarea name="notes" id="edit_notes" rows="3"></textarea>
                 </div>
                 
+                <div style="background: #e7f3ff; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 8px; color: #0066cc; font-weight: 600;">Enlace para el paciente:</label>
+                    <input type="text" id="edit_patient_link" readonly value="" style="width: 100%; padding: 8px; border: 1px solid #b8daff; border-radius: 5px; font-size: 12px;">
+                    <p style="margin-top: 8px; font-size: 11px; color: #666;">
+                        Número de consulta: <strong id="edit_consultation_id">-</strong><br>
+                        Comparta este enlace con el paciente para que acceda a la videoconsulta.
+                    </p>
+                </div>
+                
                 <div class="form-actions">
                     <button type="submit" class="btn">Guardar Cambios</button>
                     <button type="button" class="btn" style="background: #6c757d;" onclick="closeEditModal()">Cancelar</button>
@@ -460,7 +499,9 @@ $success = isset($_GET['success']);
                     extendedProps: {
                         status: apt.status,
                         room_name: apt.room_name,
-                        notes: apt.notes || ''
+                        notes: apt.notes || '',
+                        patient_id: apt.patient_id,
+                        access_token: apt.access_token || ''
                     }
                 });
             });
@@ -505,11 +546,29 @@ $success = isset($_GET['success']);
             document.getElementById('edit_id').value = event.id;
             document.getElementById('edit_status').value = event.extendedProps.status;
             document.getElementById('edit_notes').value = event.extendedProps.notes || '';
+            
+            const baseUrl = window.location.origin + '/patient_join.php';
+            const patientLink = baseUrl + '?token=' + event.extendedProps.access_token;
+            document.getElementById('edit_patient_link').value = patientLink;
+            document.getElementById('edit_consultation_id').textContent = event.id;
             document.getElementById('editModal').classList.add('show');
         }
         
         function closeEditModal() {
             document.getElementById('editModal').classList.remove('show');
+        }
+        
+        function copyLink(link) {
+            navigator.clipboard.writeText(link).then(function() {
+                alert('Enlace copiado al portapapeles');
+            }).catch(function() {
+                prompt('Copie este enlace:', link);
+            });
+        }
+        
+        function sendWhatsApp(patientName, link) {
+            const message = encodeURIComponent('Hola ' + patientName + ', le compartimos el enlace para su videoconsulta: ' + link);
+            window.open('https://wa.me/?text=' + message, '_blank');
         }
         
         // Close modal on outside click

@@ -1,13 +1,14 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['doctor_id'])) {
+if (!isset($_SESSION['user_id']) && !isset($_SESSION['doctor_id'])) {
     header('Location: login.php');
     exit;
 }
 
 $conn = new mysqli('telehealth-db', 'telehealth', 'telehealth123', 'telehealth');
-$doctor_id = $_SESSION['doctor_id'];
+$user_id = $_SESSION['user_id'] ?? $_SESSION['doctor_id'] ?? null;
+$user_role = $_SESSION['user_role'] ?? 'assistant';
 $message = '';
 $message_type = '';
 
@@ -110,7 +111,7 @@ if (isset($_GET['edit'])) {
             background: #f5f5f5;
         }
         .header {
-            background: #0066cc;
+            background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
             padding: 15px 30px;
             display: flex;
@@ -328,7 +329,10 @@ if (isset($_GET['edit'])) {
 </head>
 <body>
     <div class="header">
-        <h1>PAHO Telesalud - Gestión de Pacientes</h1>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="images/Logo Ladera ESE.png" alt="Logo" style="height: 40px; width: auto; border-radius: 5px;">
+            <h1>Red de Salud Ladera ESE</h1>
+        </div>
         <div class="nav">
             <a href="dashboard.php">Dashboard</a>
             <a href="schedule.php">Agendamiento</a>
