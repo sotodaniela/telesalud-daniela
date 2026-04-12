@@ -249,10 +249,32 @@ CREATE TABLE IF NOT EXISTS lab_results (
     FOREIGN KEY (doctor_id) REFERENCES doctors(id)
 );
 
+-- Tabla para permisos de módulos por usuario
+CREATE TABLE IF NOT EXISTS user_module_permissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    module_key VARCHAR(50) NOT NULL,
+    module_name VARCHAR(100) NOT NULL,
+    is_enabled BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES doctors(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_module (user_id, module_key)
+);
+
 -- Insertar doctor admin por defecto
 INSERT INTO doctors (username, password, full_name, specialty, professional_id, email) VALUES 
 ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Dr. Administrador', 'Medicina General', 'RM12345', 'admin@paho.org');
 -- Contraseña: pass
+
+-- Insertar permisos por defecto para admin
+INSERT INTO user_module_permissions (user_id, module_key, module_name, is_enabled) VALUES 
+(1, 'dashboard', 'Dashboard', TRUE),
+(1, 'patients', 'Pacientes', TRUE),
+(1, 'schedule', 'Agenda/Citas', TRUE),
+(1, 'teleconsulta', 'Teleconsulta', TRUE),
+(1, 'clinical_history', 'Historia Clínica', TRUE),
+(1, 'users', 'Gestión de Usuarios', TRUE);
 
 -- Insertar pacientes de ejemplo
 INSERT INTO patients (id_type, id_number, first_name, second_name, last_name, second_last_name, birth_date, gender, email, phone, mobile, address, city, department, eps_name, eps_afiliation_type, occupation, emergency_contact_name, emergency_contact_phone) VALUES 

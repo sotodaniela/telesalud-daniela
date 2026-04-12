@@ -50,6 +50,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $success = 'Usuario actualizado exitosamente';
         }
         
+        if ($action === 'update_permissions') {
+            $user_id = intval($_POST['user_id']);
+            $modules = isset($_POST['modules']) ? $_POST['modules'] : [];
+            
+            $all_modules = [
+                'dashboard' => 'Dashboard',
+                'patients' => 'Pacientes',
+                'schedule' => 'Agenda/Citas',
+                'teleconsulta' => 'Teleconsulta',
+                'clinical_history' => 'Historia Clínica',
+                'users' => 'Gestión de Usuarios'
+            ];
+            
+            foreach ($all_modules as $key => $name) {
+                $is_enabled = isset($modules[$key]) ? 1 : 0;
+                $conn->query("INSERT INTO user_module_permissions (user_id, module_key, module_name, is_enabled) 
+                             VALUES ($user_id, '$key', '$name', $is_enabled)
+                             ON DUPLICATE KEY UPDATE is_enabled = $is_enabled");
+            }
+            $success = 'Permisos actualizados exitosamente';
+        }
+        
         if ($action === 'delete') {
             $id = intval($_POST['id']);
             if ($id !== $_SESSION['user_id']) {
@@ -63,7 +85,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $users = $conn->query("SELECT * FROM users ORDER BY role, full_name");
+
+$user_permissions = [];
+$permissions_result = $conn->query("SELECT * FROM user_module_permissions");
+while ($perm = $permissions_result->fetch_assoc()) {
+    $user_permissions[$perm['user_id']][$perm['module_key']] = $perm['is_enabled'];
+}
+
 $conn->close();
+
+$all_modules = [
+    'dashboard' => ['name' => 'Dashboard', 'icon' => '📊'],
+    'patients' => ['name' => 'Pacientes', 'icon' => '👥'],
+    'schedule' => ['name' => 'Agenda/Citas', 'icon' => '📅'],
+    'teleconsulta' => ['name' => 'Teleconsulta', 'icon' => '📹'],
+    'clinical_history' => ['name' => 'Historia Clínica', 'icon' => '📋'],
+    'users' => ['name' => 'Gestión de Usuarios', 'icon' => '⚙️']
+];
 
 $role_labels = [
     'admin' => 'Administrador',
@@ -291,6 +329,27 @@ $role_colors = [
         .checkbox-group input {
             width: auto;
         }
+        
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #28a745;
+        }
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #28a745;
+        }
     </style>
 </head>
 <body>
@@ -343,6 +402,7 @@ $role_colors = [
                         <td><?php echo $user['last_login'] ? date('d/m/Y H:i', strtotime($user['last_login'])) : 'Nunca'; ?></td>
                         <td>
                             <button class="btn-small btn-edit" onclick="editUser(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['username']); ?>', '<?php echo htmlspecialchars($user['full_name']); ?>', '<?php echo htmlspecialchars($user['email'] ?? ''); ?>', '<?php echo htmlspecialchars($user['specialty'] ?? ''); ?>', '<?php echo $user['role']; ?>', <?php echo $user['is_active']; ?>)">Editar</button>
+                            <button class="btn-small" style="background: #6f42c1;" onclick="openPermissionsModal(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['full_name']); ?>')">Permisos</button>
                             <?php if ($user['id'] != $_SESSION['user_id']): ?>
                             <button class="btn-small btn-delete" onclick="deleteUser(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['full_name']); ?>')">Eliminar</button>
                             <?php endif; ?>
@@ -478,6 +538,37 @@ $role_colors = [
         </div>
     </div>
     
+    <!-- Permissions Modal -->
+    <div id="permissionsModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close" onclick="closePermissionsModal()">&times;</span>
+            <h2>Permisos de Módulos</h2>
+            <p style="margin: 10px 0 20px; color: #666;">Usuario: <strong id="perm_user_name"></strong></p>
+            <form method="POST" action="">
+                <input type="hidden" name="action" value="update_permissions">
+                <input type="hidden" name="user_id" id="perm_user_id">
+                <div style="display: grid; gap: 12px;">
+                    <?php foreach ($all_modules as $key => $module): ?>
+                    <div class="module-permission-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 20px;"><?php echo $module['icon']; ?></span>
+                            <span style="font-weight: 500; color: #333;"><?php echo $module['name']; ?></span>
+                        </div>
+                        <label class="toggle-switch" style="position: relative; display: inline-block; width: 50px; height: 26px;">
+                            <input type="checkbox" name="modules[<?php echo $key; ?>]" id="perm_<?php echo $key; ?>" value="1" class="perm-toggle" style="opacity: 0; width: 0; height: 0;">
+                            <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; before: none;"></span>
+                        </label>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <div class="form-actions" style="margin-top: 25px;">
+                    <button type="submit" class="btn">Guardar Permisos</button>
+                    <button type="button" class="btn" style="background: #6c757d;" onclick="closePermissionsModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
     <script>
         function openModal() {
             document.getElementById('userModal').classList.add('show');
@@ -512,11 +603,43 @@ $role_colors = [
             document.getElementById('deleteModal').classList.remove('show');
         }
         
+        function openPermissionsModal(userId, userName) {
+            document.getElementById('perm_user_id').value = userId;
+            document.getElementById('perm_user_name').textContent = userName;
+            
+            // Reset all toggles
+            document.querySelectorAll('.perm-toggle').forEach(toggle => {
+                toggle.checked = false;
+            });
+            
+            // Get current permissions via AJAX
+            fetch('get_user_permissions.php?user_id=' + userId)
+                .then(response => response.json())
+                .then(data => {
+                    Object.keys(data).forEach(key => {
+                        const toggle = document.getElementById('perm_' + key);
+                        if (toggle && data[key] == 1) {
+                            toggle.checked = true;
+                        }
+                    });
+                })
+                .catch(() => {
+                    console.log('Using default permissions');
+                });
+            
+            document.getElementById('permissionsModal').classList.add('show');
+        }
+        
+        function closePermissionsModal() {
+            document.getElementById('permissionsModal').classList.remove('show');
+        }
+        
         window.onclick = function(event) {
             if (event.target.classList.contains('modal')) {
                 closeModal();
                 closeEditModal();
                 closeDeleteModal();
+                closePermissionsModal();
             }
         }
     </script>
