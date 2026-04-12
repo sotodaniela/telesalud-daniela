@@ -333,10 +333,18 @@ $role_colors = [
         .toggle-switch input:checked + .toggle-slider {
             background-color: #28a745;
         }
-        .toggle-switch input:checked + .toggle-slider:before {
-            transform: translateX(24px);
+        .module-permission-item .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 26px;
         }
-        .toggle-slider:before {
+        .module-permission-item .toggle-slider:before {
             position: absolute;
             content: "";
             height: 20px;
@@ -346,9 +354,13 @@ $role_colors = [
             background-color: white;
             transition: .4s;
             border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-        .toggle-switch input:checked + .toggle-slider {
+        .module-permission-item input:checked + .toggle-slider {
             background-color: #28a745;
+        }
+        .module-permission-item input:checked + .toggle-slider:before {
+            transform: translateX(24px);
         }
     </style>
 </head>
@@ -554,10 +566,10 @@ $role_colors = [
                             <span style="font-size: 20px;"><?php echo $module['icon']; ?></span>
                             <span style="font-weight: 500; color: #333;"><?php echo $module['name']; ?></span>
                         </div>
-                        <label class="toggle-switch" style="position: relative; display: inline-block; width: 50px; height: 26px;">
-                            <input type="checkbox" name="modules[<?php echo $key; ?>]" id="perm_<?php echo $key; ?>" value="1" class="perm-toggle" style="opacity: 0; width: 0; height: 0;">
-                            <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; before: none;"></span>
-                        </label>
+                        <div style="position: relative; width: 50px; height: 26px;">
+                            <input type="checkbox" name="modules[<?php echo $key; ?>]" id="perm_<?php echo $key; ?>" value="1" class="perm-toggle" style="position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; z-index: 2;">
+                            <span class="toggle-slider" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 26px; cursor: pointer;"></span>
+                        </div>
                     </div>
                     <?php endforeach; ?>
                 </div>
