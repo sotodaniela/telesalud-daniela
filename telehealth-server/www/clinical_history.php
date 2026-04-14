@@ -1,13 +1,13 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) && !isset($_SESSION['doctor_id'])) {
+if (!isset($_SESSION['user_id']) && !isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
 
 $conn = new mysqli('telehealth-db', 'telehealth', 'telehealth123', 'telehealth');
-$doctor_id = $_SESSION['user_id'] ?? $_SESSION['doctor_id'] ?? null;
+$doctor_id = $_SESSION['user_id'] ?? $_SESSION['user_id'] ?? null;
 $doctor_name = $_SESSION['user_name'] ?? $_SESSION['doctor_name'] ?? '';
 $message = '';
 
@@ -732,7 +732,10 @@ $age = $birth_date->diff($today)->y;
         <!-- Historial de Consultas -->
         <div id="history-list" class="tab-content" style="display: none;">
             <div class="card">
-                <h3>Historial de Consultas</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3>Historial de Consultas</h3>
+                    <a href="teleconsulta_pdf.php?id=<?php echo $patient_id; ?>" target="_blank" class="btn" style="background: #dc3545; text-decoration: none;">📄 Generar PDF</a>
+                </div>
                 <?php if ($histories->num_rows > 0): ?>
                 <div class="history-list">
                     <?php while ($h = $histories->fetch_assoc()): ?>
@@ -754,6 +757,7 @@ $age = $birth_date->diff($today)->y;
                         <p><strong>Diagnóstico:</strong> <?php echo htmlspecialchars($diag[0]['code'] . ' - ' . $diag[0]['name']); ?></p>
                         <?php endif; ?>
                         <?php endif; ?>
+                        <a href="teleconsulta_pdf.php?id=<?php echo $patient_id; ?>&consultation_id=<?php echo $h['id']; ?>" target="_blank" class="btn" style="background: #dc3545; font-size: 12px; margin-top: 10px; text-decoration: none;">📄 PDF</a>
                     </div>
                     <?php endwhile; ?>
                 </div>

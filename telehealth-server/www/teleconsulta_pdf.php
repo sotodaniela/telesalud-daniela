@@ -44,12 +44,6 @@ $age = $birth_date->diff($today)->y;
 // Create PDF
 class MYPDF extends TCPDF {
     public function Header() {
-        // Logo
-        $logoPath = __DIR__ . '/images/Logo Ladera ESE.png';
-        if (file_exists($logoPath)) {
-            $this->Image($logoPath, 15, 10, 30, '', 'PNG', '', 'T', false, 300, '', false, false, 0, false, false, false);
-        }
-        
         // Institution info
         $this->SetFont('helvetica', 'B', 12);
         $this->Cell(0, 8, 'RED DE SALUD LADERA ESE', 0, 1, 'C');
@@ -57,7 +51,7 @@ class MYPDF extends TCPDF {
         $this->Cell(0, 5, 'NIT: 900.373.695-9', 0, 1, 'C');
         $this->Cell(0, 5, 'Cra 28 No. 08-08 B/ Antonio Nariño, Cali', 0, 1, 'C');
         $this->Cell(0, 5, 'Tel: 556-2282 | Email: info@redladera.gov.co', 0, 1, 'C');
-        $this->Ln(5);
+        $this->Ln(3);
         
         // Title
         $this->SetFont('helvetica', 'B', 14);

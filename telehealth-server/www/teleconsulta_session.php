@@ -1,14 +1,14 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['doctor_id'])) {
+if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
 
 $conn = new mysqli('telehealth-db', 'telehealth', 'telehealth123', 'telehealth');
-$doctor_id = $_SESSION['doctor_id'];
-$doctor_name = $_SESSION['doctor_name'];
+$doctor_id = $_SESSION['user_id'];
+$doctor_name = $_SESSION['user_name'] ?? 'Doctor';
 
 $consultation_id = intval($_GET['id'] ?? 0);
 $patient_id = intval($_GET['patient_id'] ?? 0);
@@ -67,7 +67,7 @@ if ($consultation_id && isset($consultation['room_name'])) {
     $header = json_encode(['alg' => 'HS256', 'typ' => 'JWT']);
     $payload = json_encode([
         'iss' => $api_key,
-        'sub' => 'doctor_' . $_SESSION['doctor_id'],
+        'sub' => 'doctor_' . $_SESSION['user_id'],
         'room' => $room_name,
         'name' => $doctor_name,
         'exp' => time() + 3600,
@@ -229,20 +229,30 @@ $personal_history = $conn->query("SELECT * FROM personal_history WHERE patient_i
             gap: 8px;
         }
         .control-btn {
-            width: 45px;
-            height: 45px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             border: none;
             cursor: pointer;
-            font-size: 16px;
             transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
         }
         .control-btn.mute { background: #444; color: white; }
         .control-btn.mute.active { background: #dc3545; }
         .control-btn.video { background: #444; color: white; }
         .control-btn.video.active { background: #dc3545; }
+        .control-btn.record { background: #444; color: white; }
+        .control-btn.record.active { background: #dc3545; animation: pulse 1.5s infinite; }
         .control-btn.end { background: #dc3545; color: white; width: 60px; }
         .control-btn:hover { transform: scale(1.1); }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
         
         .clinical-section {
             background: white;
@@ -438,9 +448,30 @@ $personal_history = $conn->query("SELECT * FROM personal_history WHERE patient_i
                 </div>
                 <?php if (!$skip_video): ?>
                 <div class="controls">
-                    <button class="control-btn mute" id="muteBtn" onclick="toggleMute()">M</button>
-                    <button class="control-btn video" id="videoBtn" onclick="toggleVideo()">V</button>
-                    <button class="control-btn end" onclick="endCall()">Fin</button>
+                    <button class="control-btn mute" id="muteBtn" onclick="toggleMute()" title="Activar/Desactivar Micrófono">
+                        <svg id="micIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                    </button>
+                    <button class="control-btn video" id="videoBtn" onclick="toggleVideo()" title="Activar/Desactivar Cámara">
+                        <svg id="camIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                        </svg>
+                    </button>
+                    <button class="control-btn record" id="recordBtn" onclick="toggleRecording()" title="Iniciar/Detener Grabación">
+                        <svg id="recIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <circle cx="12" cy="12" r="8"></circle>
+                        </svg>
+                    </button>
+                    <button class="control-btn end" onclick="endCall()" title="Finalizar Llamada">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.73-1.68-1.36-2.66-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/>
+                        </svg>
+                    </button>
                 </div>
                 <?php endif; ?>
             </div>
@@ -594,6 +625,10 @@ $personal_history = $conn->query("SELECT * FROM personal_history WHERE patient_i
         let room;
         let isMuted = false;
         let isVideoOff = false;
+        let isRecording = false;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let recordingStartTime = null;
         let localStream = null;
         let recognition = null;
         let isTranscribing = false;
@@ -637,19 +672,99 @@ $personal_history = $conn->query("SELECT * FROM personal_history WHERE patient_i
         }
         
         function toggleMute() {
+            isMuted = !isMuted;
             if (room) {
-                room.localParticipant.setMicrophoneEnabled(isMuted);
-                isMuted = !isMuted;
-                document.getElementById('muteBtn').classList.toggle('active', isMuted);
+                room.localParticipant.setMicrophoneEnabled(!isMuted);
+            } else if (localStream) {
+                localStream.getAudioTracks().forEach(track => {
+                    track.enabled = !isMuted;
+                });
+            }
+            document.getElementById('muteBtn').classList.toggle('active', isMuted);
+            const micIcon = document.querySelector('#micIcon');
+            if (isMuted) {
+                micIcon.innerHTML = '<line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line>';
+            } else {
+                micIcon.innerHTML = '<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line>';
             }
         }
         
         function toggleVideo() {
+            isVideoOff = !isVideoOff;
             if (room) {
-                room.localParticipant.setCameraEnabled(isVideoOff);
-                isVideoOff = !isVideoOff;
-                document.getElementById('videoBtn').classList.toggle('active', isVideoOff);
+                room.localParticipant.setCameraEnabled(!isVideoOff);
+            } else if (localStream) {
+                localStream.getVideoTracks().forEach(track => {
+                    track.enabled = !isVideoOff;
+                });
             }
+            document.getElementById('videoBtn').classList.toggle('active', isVideoOff);
+            const camIcon = document.querySelector('#camIcon');
+            if (isVideoOff) {
+                camIcon.innerHTML = '<line x1="1" y1="1" x2="23" y2="23"></line><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34m-7.72-2.06a4 4 0 1 1-5.56-5.56"></path>';
+            } else {
+                camIcon.innerHTML = '<polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>';
+            }
+        }
+        
+        function toggleRecording() {
+            if (!isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+        
+        function startRecording() {
+            if (!localStream) {
+                alert('No hay flujo de video activo');
+                return;
+            }
+            
+            recordedChunks = [];
+            recordingStartTime = new Date();
+            
+            const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
+                ? 'video/webm;codecs=vp9' 
+                : 'video/webm';
+            
+            mediaRecorder = new MediaRecorder(localStream, { mimeType: mimeType });
+            
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+            
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: mimeType });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const duration = Math.round((new Date() - recordingStartTime) / 1000);
+                a.download = `grabacion_${Date.now()}.webm`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                const durationMin = Math.floor(duration / 60);
+                const durationSec = duration % 60;
+                alert(`Grabación guardada. Duración: ${durationMin}m ${durationSec}s`);
+            };
+            
+            mediaRecorder.start(1000);
+            isRecording = true;
+            document.getElementById('recordBtn').classList.add('active');
+            document.getElementById('recIcon').style.fill = '#fff';
+            console.log('Grabación iniciada');
+        }
+        
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            isRecording = false;
+            document.getElementById('recordBtn').classList.remove('active');
+            console.log('Grabación detenida');
         }
         
         function endCall() {

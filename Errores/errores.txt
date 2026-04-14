@@ -1,0 +1,2 @@
+
+Deprecated: htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /var/www/html/teleconsulta_session.php on line 431

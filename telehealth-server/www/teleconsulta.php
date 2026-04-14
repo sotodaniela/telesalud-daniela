@@ -1,13 +1,13 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['doctor_id'])) {
+if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
 
 $conn = new mysqli('telehealth-db', 'telehealth', 'telehealth123', 'telehealth');
-$doctor_id = $_SESSION['doctor_id'];
+$user_id = $_SESSION['user_id'];
 $message = '';
 
 // Handle form submission
@@ -33,7 +33,7 @@ $upcoming = $conn->query("
     SELECT c.id, c.patient_id, c.scheduled_date, CONCAT(p.first_name, ' ', p.last_name) as patient_name, c.status
     FROM consultations c
     JOIN patients p ON c.patient_id = p.id
-    WHERE c.doctor_id = $doctor_id 
+    WHERE c.doctor_id = $user_id 
     AND c.status = 'scheduled'
     AND c.scheduled_date >= NOW()
     ORDER BY c.scheduled_date ASC

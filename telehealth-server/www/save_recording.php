@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['doctor_id'])) {
+if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'error' => 'No autorizado']);
     exit;
@@ -48,7 +48,7 @@ if (move_uploaded_file($file['tmp_name'], $targetPath)) {
     
     $recordingPath = 'recordings/' . $fileName;
     $stmt = $conn->prepare('UPDATE consultations SET recording_path = ? WHERE id = ? AND doctor_id = ?');
-    $stmt->bind_param('sii', $recordingPath, $consultation_id, $_SESSION['doctor_id']);
+    $stmt->bind_param('sii', $recordingPath, $consultation_id, $_SESSION['user_id']);
     
     if ($stmt->execute()) {
         $stmt->close();

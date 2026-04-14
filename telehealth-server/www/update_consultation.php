@@ -3,7 +3,7 @@ session_start();
 
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['doctor_id'])) {
+if (!isset($_SESSION['user_id'])) {
     echo json_encode(['success' => false, 'error' => 'No autorizado']);
     exit;
 }
@@ -32,7 +32,7 @@ $status = $data['status'] ?? 'completed';
 $duration = $data['duration'] ?? 0;
 $notes = $data['notes'] ?? '';
 $id = $data['id'];
-$doctor_id = $_SESSION['doctor_id'];
+$doctor_id = $_SESSION['user_id'];
 
 $stmt->bind_param('issii', $duration, $notes, $status, $id, $doctor_id);
 

@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['doctor_id'])) {
+if (!isset($_SESSION['user_id'])) {
     die("No autenticado");
 }
 
@@ -17,7 +17,7 @@ echo "<p>GET consultation_id: " . $consultation_id . "</p>";
 $consultation = null;
 
 if ($consultation_id) {
-    $consultation = $conn->query("SELECT c.*, CONCAT(p.first_name, ' ', p.last_name) as patient_name, p.id_number, p.id_type, p.email, p.phone, p.mobile, p.birth_date, p.gender, p.address, p.city, p.eps_name, p.id as pid FROM consultations c JOIN patients p ON c.patient_id = p.id WHERE c.id = $consultation_id AND c.doctor_id = " . $_SESSION['doctor_id'])->fetch_assoc();
+    $consultation = $conn->query("SELECT c.*, CONCAT(p.first_name, ' ', p.last_name) as patient_name, p.id_number, p.id_type, p.email, p.phone, p.mobile, p.birth_date, p.gender, p.address, p.city, p.eps_name, p.id as pid FROM consultations c JOIN patients p ON c.patient_id = p.id WHERE c.id = $consultation_id AND c.doctor_id = " . $_SESSION['user_id'])->fetch_assoc();
     if ($consultation) {
         $patient_id = $consultation['pid'];
     }

@@ -8,8 +8,8 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 // Set backward compatible variables if not already set
-if (!isset($_SESSION['doctor_id']) && isset($_SESSION['user_id'])) {
-    $_SESSION['doctor_id'] = $_SESSION['user_id'];
+if (!isset($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
+    $_SESSION['user_id'] = $_SESSION['user_id'];
 }
 if (!isset($_SESSION['doctor_name']) && isset($_SESSION['user_name'])) {
     $_SESSION['doctor_name'] = $_SESSION['user_name'];

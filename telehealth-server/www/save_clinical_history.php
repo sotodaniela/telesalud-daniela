@@ -3,7 +3,7 @@ session_start();
 
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['doctor_id'])) {
+if (!isset($_SESSION['user_id'])) {
     echo json_encode(['success' => false, 'error' => 'No autenticado']);
     exit;
 }
@@ -12,7 +12,7 @@ $conn = new mysqli('telehealth-db', 'telehealth', 'telehealth123', 'telehealth')
 
 $patient_id = intval($_POST['patient_id'] ?? 0);
 $consultation_id = intval($_POST['consultation_id'] ?? 0);
-$doctor_id = $_SESSION['doctor_id'];
+$doctor_id = $_SESSION['user_id'];
 
 if (!$patient_id) {
     echo json_encode(['success' => false, 'error' => 'Paciente no especificado']);

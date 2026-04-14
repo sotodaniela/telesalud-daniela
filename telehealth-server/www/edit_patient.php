@@ -1,13 +1,13 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['doctor_id'])) {
+if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
 
 $conn = new mysqli('telehealth-db', 'telehealth', 'telehealth123', 'telehealth');
-$doctor_id = $_SESSION['doctor_id'];
+$doctor_id = $_SESSION['user_id'];
 $message = '';
 $error = '';
 

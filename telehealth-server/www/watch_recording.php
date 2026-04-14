@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['doctor_id'])) {
+if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
@@ -9,7 +9,7 @@ if (!isset($_SESSION['doctor_id'])) {
 $conn = new mysqli('telehealth-db', 'telehealth', 'telehealth123', 'telehealth');
 
 $consultation_id = $_GET['id'] ?? '';
-$doctor_id = $_SESSION['doctor_id'];
+$doctor_id = $_SESSION['user_id'];
 
 $stmt = $conn->prepare('
     SELECT c.*, CONCAT(p.first_name, " ", p.last_name) as patient_name, p.id_number as document_id, p.phone, p.email as patient_email

@@ -1,13 +1,13 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) && !isset($_SESSION['doctor_id'])) {
+if (!isset($_SESSION['user_id']) && !isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
 
 $conn = new mysqli('telehealth-db', 'telehealth', 'telehealth123', 'telehealth');
-$user_id = $_SESSION['user_id'] ?? $_SESSION['doctor_id'] ?? null;
+$user_id = $_SESSION['user_id'] ?? $_SESSION['user_id'] ?? null;
 $user_role = $_SESSION['user_role'] ?? 'assistant';
 
 $search = $_GET['search'] ?? '';
@@ -213,7 +213,10 @@ if ($search) {
                 <?php if ($history['diagnoses']): ?>
                 <p><strong>Diagnóstico:</strong> <?php echo htmlspecialchars($history['diagnoses']); ?></p>
                 <?php endif; ?>
-                <a href="clinical_history.php?patient_id=<?php echo $patient_data['id']; ?>&history_id=<?php echo $history['id']; ?>" class="btn" style="margin-top: 10px; font-size: 12px;">Ver Detalle</a>
+                <div style="margin-top: 10px; display: flex; gap: 10px;">
+                    <a href="clinical_history.php?patient_id=<?php echo $patient_data['id']; ?>&history_id=<?php echo $history['id']; ?>" class="btn" style="font-size: 12px;">Ver Detalle</a>
+                    <a href="teleconsulta_pdf.php?id=<?php echo $patient_data['id']; ?>&consultation_id=<?php echo $history['id']; ?>" target="_blank" class="btn" style="background: #dc3545; font-size: 12px;">📄 Generar PDF</a>
+                </div>
             </div>
             <?php endwhile; ?>
         </div>

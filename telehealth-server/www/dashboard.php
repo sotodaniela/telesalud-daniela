@@ -13,6 +13,12 @@ $user_specialty = $_SESSION['user_specialty'] ?? '';
 
 $conn = new mysqli('telehealth-db', 'telehealth', 'telehealth123', 'telehealth');
 
+$user_permissions = [];
+$perm_result = $conn->query("SELECT module_key, is_enabled FROM user_module_permissions WHERE user_id = $user_id");
+while ($perm = $perm_result->fetch_assoc()) {
+    $user_permissions[$perm['module_key']] = $perm['is_enabled'];
+}
+
 $consultations = null;
 $total = 0;
 $completed = 0;
@@ -424,11 +430,15 @@ $role_labels = [
         </div>
         <div class="nav">
             <a href="dashboard.php" class="active">Dashboard</a>
-            <?php if ($user_role === 'admin'): ?>
+            <?php if (isset($user_permissions['users']) && $user_permissions['users']): ?>
             <a href="users.php">Usuarios</a>
             <?php endif; ?>
+            <?php if (isset($user_permissions['schedule']) && $user_permissions['schedule']): ?>
             <a href="schedule.php">Agendamiento</a>
+            <?php endif; ?>
+            <?php if (isset($user_permissions['patients']) && $user_permissions['patients']): ?>
             <a href="patients.php">Pacientes</a>
+            <?php endif; ?>
             <a href="logout.php" class="logout">Cerrar Sesión</a>
         </div>
     </div>
@@ -454,12 +464,18 @@ $role_labels = [
         </div>
         
         <div class="actions">
+            <?php if (isset($user_permissions['schedule']) && $user_permissions['schedule']): ?>
             <a href="schedule.php" class="btn btn-primary">📅 Agendar Cita</a>
+            <?php endif; ?>
+            <?php if (isset($user_permissions['patients']) && $user_permissions['patients']): ?>
             <a href="patients.php" class="btn" style="background: #17a2b8;">👥 Pacientes</a>
-            <?php if ($user_role === 'doctor'): ?>
+            <?php endif; ?>
+            <?php if (isset($user_permissions['teleconsulta']) && $user_permissions['teleconsulta']): ?>
             <a href="teleconsulta.php" class="btn" style="background: #6f42c1;">💻 Teleconsulta</a>
             <?php endif; ?>
+            <?php if (isset($user_permissions['clinical_history']) && $user_permissions['clinical_history']): ?>
             <a href="clinical_history_list.php" class="btn" style="background: #e83e8c;">📋 Historia Clínica</a>
+            <?php endif; ?>
             <?php if ($user_role === 'admin'): ?>
             <button onclick="toggleReports()" class="btn" style="background: #ffc107; color: #000;">📊 Informes del Sistema</button>
             <?php endif; ?>

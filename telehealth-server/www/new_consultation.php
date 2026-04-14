@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['doctor_id'])) {
+if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $stmt = $conn->prepare('INSERT INTO consultations (room_name, doctor_id, patient_id, scheduled_date, notes, status) VALUES (?, ?, ?, ?, ?, ?)');
         $status = 'scheduled';
-        $stmt->bind_param('siisss', $room_name, $_SESSION['doctor_id'], $patient_id, $scheduled_datetime, $notes, $status);
+        $stmt->bind_param('siisss', $room_name, $_SESSION['user_id'], $patient_id, $scheduled_datetime, $notes, $status);
         
         if ($stmt->execute()) {
             $success = 'Videoconsulta creada exitosamente. ID: ' . $stmt->insert_id;
